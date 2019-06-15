@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -33,9 +34,13 @@ public class PlayerControlledCharacterView extends View {
     private Bitmap enemyFour;
     private Bitmap enemyFive;
     private Bitmap enemySix;
-    //score variable
+    //score display
 
     private Paint scorePaint = new Paint();
+
+    //high score display
+
+    private Paint highScorePaint = new Paint();
 
     //player coordinates
 
@@ -43,16 +48,15 @@ public class PlayerControlledCharacterView extends View {
     private int playery = PLAYER_Y_POS_START;
 
 
-    //enemy position (how far its gone down the stairs)
-
-    private int enemyPosition = 0;
     //enemy counter to control how fast it moves
-    private int enemySpeed = 18;
-    //space out the enemies
-    private int enemySpace = 1;
+    private int enemySpeed = 10;
 
     //score
     private int score = 0;
+
+    //high score
+
+    private int highScore = 0;
 
 
     //score counter. determines the speed the score increments at
@@ -68,15 +72,23 @@ public class PlayerControlledCharacterView extends View {
     //integer to impact the enemy spawn rate
     private int enemySpawn = 5;
 
+    //declare this variable for using the shared preferences
+    SharedPreferences settings = this.getContext().getSharedPreferences("GAME_DATA", Context.MODE_PRIVATE);
+
+    //declare activity for using start activity for result
+
     public PlayerControlledCharacterView(Context context) {
         //referring to the parent object. this class is a subclass of the view class, a preexisting
         //class used for user interface and display components
         super(context);
 
+
         //inactive enemies have a lane and position of -1;
         for(int i = 0; i < MAX_ENEMIES;i++){
             enemies[i] = new enemy(-1,false,-1);
         }
+        //retrieve high score from shared preferences
+        highScore = settings.getInt("HIGH_SCORE",0);
         //store character in a bitmap from the picture in the resources section of the project
         playerCharacter = BitmapFactory.decodeResource(getResources(),R.drawable.player);
 
@@ -98,6 +110,12 @@ public class PlayerControlledCharacterView extends View {
         scorePaint.setTextSize(60);
         scorePaint.setTypeface(Typeface.DEFAULT_BOLD);
         scorePaint.setAntiAlias(true);
+
+        //setup display for high score
+        highScorePaint.setColor(Color.WHITE);
+        highScorePaint.setTextSize(60);
+        highScorePaint.setTypeface(Typeface.DEFAULT_BOLD);
+        highScorePaint.setAntiAlias(true);
     }
 
     @Override
@@ -105,7 +123,20 @@ public class PlayerControlledCharacterView extends View {
     protected void onDraw(Canvas canvas) {
         //check if a hit occurred
         if (hit) {
+            //update high score if necessary
+            if(score > highScore){
+                highScore = score;
+                //save it to shared preferences
+                SharedPreferences.Editor editor = settings.edit();
+                editor.putInt("HIGH_SCORE",score);
+                editor.commit();
+            }
+            //return score result to game over activity
+            Intent i = new Intent();
+            i.putExtra("score",score);
+            //declare the gameplay activity to finish and return this result
             Activity activity = (Activity)getContext();
+            activity.setResult(gameplayActivity.RESULT_OK,i);
             activity.finish();
         } else {
             //left player position
@@ -126,7 +157,6 @@ public class PlayerControlledCharacterView extends View {
 
             //now fill array with enemies
             //use rng to determine how often
-            //one in 5 for now
             //change the rng based on score
 
             if(score > 150){
@@ -272,8 +302,10 @@ public class PlayerControlledCharacterView extends View {
                     }
                 }
             }
+            //drawing the player character and score and high score
             canvas.drawBitmap(playerCharacter, playerx, playery, null);
             canvas.drawText("Score : " + score, 20, 60, scorePaint);
+            canvas.drawText("High Score : " + highScore, 550, 60, highScorePaint);
             //score count is independent and is done here
             scoreCounter--;
             if (scoreCounter == 0) {
@@ -281,7 +313,6 @@ public class PlayerControlledCharacterView extends View {
                 scoreCounter = 12;
             }
             //increment all enemy positions
-            Intent startIntent = new Intent(getContext().getApplicationContext(), gameOver.class);
             for (int i = 0; i < MAX_ENEMIES; i++) {
                 if (enemies[i].getPosition() == 13) {
                     //if both the enemy and player are in the same lane

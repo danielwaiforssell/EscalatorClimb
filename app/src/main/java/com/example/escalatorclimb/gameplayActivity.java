@@ -1,6 +1,7 @@
 package com.example.escalatorclimb;
 
 import android.content.pm.ActivityInfo;
+import android.media.MediaPlayer;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -9,7 +10,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 public class gameplayActivity extends AppCompatActivity {
-
     //creating an object of player character class
     private PlayerControlledCharacterView gameView;
     private Handler handler = new Handler();
